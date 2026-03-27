@@ -193,6 +193,15 @@ h2{font-size:1.3rem;font-weight:700;margin-bottom:16px}
   .header,.content,.tabs{padding-left:16px;padding-right:16px}
   .step{gap:12px}
 }
+
+/* Footer */
+.site-footer{background:linear-gradient(135deg,#0a0d14 0%,#141824 100%);border-top:1px solid var(--border);padding:28px 40px;margin-top:40px}
+.site-footer .footer-tagline{color:var(--text2);font-size:0.85rem;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.site-footer .footer-tagline strong{color:var(--accent)}
+.site-footer .footer-disclaimer{font-size:0.75rem;color:#606882;line-height:1.7}
+.site-footer .footer-disclaimer strong{color:#8892aa;font-weight:600}
+.site-footer .footer-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:0.72rem;color:#4a5268;flex-wrap:wrap;gap:8px}
+@media(max-width:768px){.site-footer{padding:20px 16px}}
 </style>
 </head>
 <body>
@@ -1240,6 +1249,19 @@ h2{font-size:1.3rem;font-weight:700;margin-bottom:16px}
   </div>
 </div>
 </div>
+
+<footer class="site-footer">
+  <div class="footer-tagline">
+    <strong>SubsurfaceAI D065 Assistant</strong> &mdash; Built to help CCS project operators navigate Alberta's CO&#8322; storage scheme approval process under AER Directive 065.
+  </div>
+  <div class="footer-disclaimer">
+    <strong>Disclaimer:</strong> This tool is provided by SubsurfaceAI for informational and planning purposes only. It does not constitute legal, regulatory, or professional engineering advice. All application materials, calculations, and submissions must be reviewed and certified by a qualified professional (P.Eng. or P.Geo.) registered in Alberta before submission to the Alberta Energy Regulator (AER). SubsurfaceAI makes no representations or warranties regarding the accuracy, completeness, or fitness for purpose of any content herein. AER requirements are subject to change &mdash; always verify against the current version of Directive 065 and your specific approval conditions. Use of this tool does not create a professional-client relationship. SubsurfaceAI accepts no liability for decisions made in reliance on this tool.
+  </div>
+  <div class="footer-bottom">
+    <span>&#169; SubsurfaceAI &middot; AER Directive 065 CO&#8322; Storage Scheme Application Assistant</span>
+    <span>Alberta, Canada &middot; Not affiliated with the Alberta Energy Regulator</span>
+  </div>
+</footer>
 
 <script>
 // ========== TAB NAVIGATION ==========
