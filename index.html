@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>D065 Application Assistant — SubsurfaceAI</title>
-<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#242836;--border:#2e3347;--text:#e4e7f0;--text2:#9ca3b8;--accent:#00b4d8;--accent2:#0077b6;--success:#10b981;--warn:#f59e0b;--danger:#ef4444;--required:#ef4444;--recommended:#f59e0b;--font:'Segoe UI',system-ui,-apple-system,sans-serif}
@@ -227,7 +226,7 @@ h2{font-size:1.3rem;font-weight:700;margin-bottom:16px}
     <button class="dl-btn dl-btn-word" id="btnWord" onclick="generateWordTemplate()">
       <div class="dl-btn-icon">W</div>
       <div class="dl-btn-text">
-        <strong>Download Word Template (.docx)</strong>
+        <strong>Download Word Template (.doc)</strong>
         <span>Editable blank template with all 12 sections, boilerplate language &amp; AER placeholders. Incomplete sections flagged from your checklist.</span>
       </div>
     </button>
@@ -1454,436 +1453,420 @@ function getIncompleteRequired(groupIndex) {
   return group.items.filter((item, ii) => item.req === 'required' && !state[`chk_${groupIndex}_${ii}`]).map(i => i.text);
 }
 
-async function generateWordTemplate() {
+function generateWordTemplate() {
   const btn = document.getElementById('btnWord');
   btn.classList.add('dl-generating');
   btn.querySelector('strong').textContent = 'Generating...';
-  await new Promise(r => setTimeout(r, 50));
 
-  try {
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, TableRow, TableCell, Table, WidthType, ShadingType, PageBreak } = docx;
+    // ---- helpers ----
+    const ph = t => `<span style="color:#0077B6;font-weight:bold">${t}</span>`;
+    const note = t => `<p style="background:#EFF7FF;border-left:3px solid #0077B6;padding:6px 10px;font-size:9.5pt;color:#444;margin:6px 0"><em>AER Guidance: ${t}</em></p>`;
+    const field = (label, val) => `<p style="margin:4px 0"><strong>${label}</strong>&nbsp;${val}</p>`;
+    const blank = () => `<p style="color:#0077B6;font-weight:bold;border-bottom:1px solid #AAD4E8;margin:4px 0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>`;
+    const hr = () => `<hr style="border:none;border-top:1px solid #DDD;margin:10px 0">`;
+    const h1 = t => `<h1 style="font-size:14pt;color:#0A1628;border-bottom:2pt solid #0077B6;padding-bottom:4px;margin:0 0 8px;mso-page-break-before:always">${t}</h1>`;
+    const h2 = t => `<h2 style="font-size:11.5pt;color:#0077B6;margin:14px 0 4px">${t}</h2>`;
+    const warn = items => items.length ? `<div style="background:#FDECEA;border-left:4px solid #C0392B;padding:8px 12px;margin:8px 0"><strong style="color:#C0392B">&#9888; INCOMPLETE — ${items.length} required item(s) pending:</strong><ul style="margin:4px 0 0 16px;color:#C0392B;font-size:9.5pt">${items.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : '';
+    const pageBreak = () => `<div style="page-break-after:always"></div>`;
 
-    const PLACEHOLDER_COLOR = '0077B6';
-    const WARN_COLOR = 'C0392B';
-    const MUTED = '666666';
 
-    const ph = (text) => new TextRun({ text, color: PLACEHOLDER_COLOR, bold: true });
-    const normal = (text) => new TextRun({ text, font: 'Arial', size: 22 });
-    const muted = (text) => new TextRun({ text, color: MUTED, italics: true, size: 20 });
-    const bold = (text) => new TextRun({ text, bold: true, font: 'Arial', size: 22 });
+    // build HTML document string
+    const s1inc = warn(getIncompleteRequired(0));
+    const s2inc = warn(getIncompleteRequired(1));
+    const s3inc = warn(getIncompleteRequired(2));
+    const s4inc = warn(getIncompleteRequired(3));
+    const s5inc = warn(getIncompleteRequired(4));
+    const s6inc = warn(getIncompleteRequired(5));
+    const s7inc = warn(getIncompleteRequired(6));
+    const s8inc = warn(getIncompleteRequired(7));
+    const s9inc = warn(getIncompleteRequired(8));
+    const s10inc = warn(getIncompleteRequired(9));
+    const s11inc = warn(getIncompleteRequired(10));
+    const s12inc = warn(getIncompleteRequired(11));
+    const s13inc = warn(getIncompleteRequired(12));
 
-    const h1 = (text) => new Paragraph({ text, heading: HeadingLevel.HEADING_1, spacing: { before: 360, after: 120 } });
-    const h2 = (text) => new Paragraph({ text, heading: HeadingLevel.HEADING_2, spacing: { before: 240, after: 80 } });
-    const h3 = (text) => new Paragraph({ text, heading: HeadingLevel.HEADING_3, spacing: { before: 200, after: 60 } });
+    const html = `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset="utf-8">
+<title>AER D065 CO\u2082 Storage Application Template</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+<style>
+  @page { margin: 2.5cm; }
+  body { font-family: Arial; font-size: 11pt; color: #111; line-height: 1.5; }
+  h1 { font-size: 14pt; color: #0A1628; border-bottom: 2pt solid #0077B6; padding-bottom: 4px; margin: 0 0 10px; mso-page-break-before: always; }
+  h1.cover-first { mso-page-break-before: avoid; }
+  h2 { font-size: 11.5pt; color: #0077B6; margin: 16px 0 4px; }
+  p { margin: 5px 0; }
+  ul { margin: 4px 0 4px 18px; }
+  li { margin: 2px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 10pt; }
+  th { background: #0077B6; color: #fff; padding: 5px 8px; text-align: left; }
+  td { padding: 4px 8px; border-bottom: 1px solid #DDD; }
+  tr:nth-child(even) td { background: #F5F8FF; }
+  .cover { text-align: center; padding: 60px 0 40px; border-bottom: 1px solid #DDD; margin-bottom: 20px; }
+  .cover h1 { font-size: 22pt; border: none; color: #0A1628; margin-bottom: 6px; mso-page-break-before: avoid; }
+  .cover .sub { font-size: 14pt; color: #0077B6; margin-bottom: 30px; }
+  .cover .fields { text-align: left; display: inline-block; font-size: 10.5pt; line-height: 2; }
+  .cover .fields strong { display: inline-block; min-width: 220px; }
+  .notice { font-size: 9pt; color: #888; font-style: italic; margin-top: 30px; }
+</style></head>
+<body>
 
-    const body = (...runs) => new Paragraph({ children: runs, spacing: { after: 120 }, style: 'Normal' });
-    const blank = () => new Paragraph({ children: [ph('[                                                                                                        ]')], spacing: { after: 80 } });
-    const rule = () => new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'CCCCCC' } }, spacing: { after: 120 } });
-    const note = (text) => new Paragraph({ children: [muted('AER Guidance: '), muted(text)], spacing: { after: 100 }, indent: { left: 400 } });
-    const pageBreak = () => new Paragraph({ children: [new PageBreak()] });
+<div class="cover">
+  <p style="font-size:9pt;color:#aaa">AER Directive 065 &mdash; Working Template &mdash; SubsurfaceAI D065 Assistant</p>
+  <h1 class="cover-first">APPLICATION FOR APPROVAL<br>CO&#8322; Storage Scheme</h1>
+  <div class="sub">Pursuant to AER Directive 065</div>
+  <div class="fields">
+    ${field('Operator (Applicant):', ph('[COMPANY LEGAL NAME]'))}
+    ${field('Project / Scheme Name:', ph('[PROJECT NAME]'))}
+    ${field('Target Formation:', ph('[TARGET FORMATION NAME]'))}
+    ${field('Location:', ph('[LSD-SEC-TWP-RGE-MER]'))}
+    ${field('AER BA Code:', ph('[BA CODE]'))}
+    ${field('Application Date:', ph('[YYYY-MM-DD]'))}
+    ${field('Prepared By:', ph('[NAME, TITLE]'))}
+    ${field('Contact:', ph('[EMAIL]  |  [PHONE]'))}
+  </div>
+  <p class="notice">All fields shown in blue must be replaced with project-specific data before submission.<br>
+  Red warnings indicate checklist items flagged as incomplete in the Compliance Checklist tab.</p>
+</div>
 
-    const incompleteWarning = (items) => {
-      if (!items.length) return [];
-      return [new Paragraph({
-        children: [new TextRun({ text: '  INCOMPLETE — ' + items.length + ' required item(s) pending:  ', color: 'FFFFFF', bold: true, highlight: 'red', size: 18 })],
-        spacing: { before: 80, after: 80 },
-      }), ...items.map(t => new Paragraph({ children: [new TextRun({ text: '\u2718 ' + t, color: WARN_COLOR, size: 18 })], indent: { left: 400 }, spacing: { after: 60 } })),
-        new Paragraph({ spacing: { after: 80 } })];
-    };
+${h1('Section 1 &mdash; General Information &amp; Scheme Description')}
+${s1inc}
+${h2('1.1&nbsp;&nbsp;Applicant Details')}
+<p>${ph('[COMPANY LEGAL NAME]')} (&ldquo;the Applicant&rdquo;), a corporation incorporated under the laws of Alberta, hereby applies for approval of a CO&#8322; storage scheme pursuant to AER Directive 065. The Applicant holds AER Business Associate (BA) Code ${ph('[BA CODE]')}.</p>
+${field('Primary Contact:', ph('[CONTACT NAME]') + ', ' + ph('[TITLE]'))}
+${field('Mailing Address:', ph('[STREET, CITY, PROVINCE, POSTAL CODE]'))}
+${field('Phone:', ph('[###-###-####]') + '&nbsp;&nbsp;&nbsp;Email:&nbsp;' + ph('[email@company.com]'))}
+${note('Applicant details must match AER OneStop submission credentials exactly. Discrepancies will generate an administrative deficiency.')}
+${hr()}
+${h2('1.2&nbsp;&nbsp;Scheme Type &amp; Purpose')}
+<p>This application describes a Class ${ph('[III / IV]')} CO&#8322; storage scheme for the purpose of permanent geological storage of anthropogenic CO&#8322;. The CO&#8322; is sourced from ${ph('[CAPTURE FACILITY NAME AND LOCATION]')} via ${ph('[PIPELINE / TRUCK / OTHER]')}. This is a ${ph('[NEW SCHEME / AMENDMENT TO SCHEME NO. XXXXX]')}.</p>
+${blank()}${hr()}
+${h2('1.3&nbsp;&nbsp;Well Location(s)')}
+<p>${ph('[LSD-SEC-TWP-RGE-MER]')} &mdash; Surface coordinates (NAD83): ${ph('[latitude, longitude]')}. Bottom-hole location (if deviated): ${ph('[LSD-SEC-TWP-RGE-MER]')}.</p>
+${note('Provide a separate entry for each injection and monitoring well. Include both surface and bottom-hole LSD for deviated wells.')}
+${blank()}${hr()}
+${h2('1.4&nbsp;&nbsp;Target Formation(s)')}
+${field('Formation Name:', ph('[FORMATION NAME]'))}
+${field('Top Depth (mKB / mTVD):', ph('[depth]') + ' / ' + ph('[depth]'))}
+${field('Base Depth (mKB / mTVD):', ph('[depth]') + ' / ' + ph('[depth]'))}
+${note('If stacking multiple storage intervals, list each zone separately.')}
+${blank()}${hr()}
+${h2('1.5&nbsp;&nbsp;CO&#8322; Stream Composition')}
+<p>Full compositional analysis attached as Appendix ${ph('[X]')}:</p>
+<table><tr><th>Component</th><th>Concentration</th></tr>
+<tr><td>CO&#8322; (mol%)</td><td>${ph('[value]')}</td></tr>
+<tr><td>H&#8322;S (ppm)</td><td>${ph('[value]')}</td></tr>
+<tr><td>N&#8322; (mol%)</td><td>${ph('[value]')}</td></tr>
+<tr><td>CH&#8324; (mol%)</td><td>${ph('[value]')}</td></tr>
+<tr><td>H&#8322;O (ppm)</td><td>${ph('[value]')}</td></tr>
+<tr><td>Other impurities</td><td>${ph('[specify]')}</td></tr></table>
+${note('AER requires compositional data to assess corrosion risk, injectivity behaviour, and geochemical reactivity. Report expected range and maximum concentrations.')}
+${hr()}
+${h2('1.6&nbsp;&nbsp;Project Timeline')}
+${field('Injection Start:', ph('[YYYY-MM]'))}
+${field('Injection Duration:', ph('[X years]') + ' (' + ph('[start year]') + ' to ' + ph('[end year]') + ')')}
+${field('Total Design Volume:', ph('[X Mt CO&#8322;]') + ' (' + ph('[X kt/yr]') + ' average annual rate)')}
+${field('Post-Injection Site Care (PISC):', ph('[X years minimum]') + ', anticipated completion ' + ph('[YYYY]'))}
+${blank()}${hr()}
+${h2('1.7&nbsp;&nbsp;Carbon Sequestration Tenure Agreement (CSTA)')}
+<p>The Applicant holds CSTA No. ${ph('[CSTA NUMBER]')} issued by the Government of Alberta, effective ${ph('[DATE]')}, covering all proposed well locations. A current executed copy is attached as Appendix ${ph('[X]')}.</p>
+${note('Approval No. 13513, Clause 11 — CSTA must be validated and maintained continuously. An expired or lapsed CSTA is an automatic deficiency.')}
+${hr()}
+${h2('1.8&nbsp;&nbsp;Mineral Rights &amp; Licensee Notification')}
+<p>${ph('[COMPANY LEGAL NAME]')} has confirmed Crown pore space rights under the CSTA above. Affected mineral rights owners and surface lessees within ${ph('[X km]')} have been notified per AER Directive 056.</p>
+${blank()}
+${pageBreak()}
 
-    const children = [
-      // ── COVER PAGE ──
-      new Paragraph({ children: [new TextRun({ text: ' ', size: 48 })], spacing: { after: 400 } }),
-      new Paragraph({ children: [new TextRun({ text: 'APPLICATION FOR APPROVAL', bold: true, size: 36, font: 'Arial', color: '0A1628' })], alignment: AlignmentType.CENTER }),
-      new Paragraph({ children: [new TextRun({ text: 'CO\u2082 Storage Scheme', bold: true, size: 30, font: 'Arial', color: '0077B6' })], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
-      new Paragraph({ children: [new TextRun({ text: 'Pursuant to AER Directive 065', size: 22, font: 'Arial', color: MUTED })], alignment: AlignmentType.CENTER, spacing: { after: 600 } }),
-      body(bold('Operator (Applicant):    '), ph('[COMPANY LEGAL NAME]')),
-      body(bold('Project / Scheme Name:   '), ph('[PROJECT NAME]')),
-      body(bold('Target Formation:        '), ph('[TARGET FORMATION NAME]')),
-      body(bold('Location:                '), ph('[LSD / Township / Range / Meridian]')),
-      body(bold('AER BA Code:             '), ph('[BA CODE]')),
-      body(bold('Application Date:        '), ph('[YYYY-MM-DD]')),
-      body(bold('Prepared By:             '), ph('[NAME, TITLE]')),
-      body(bold('Contact:                 '), ph('[EMAIL]  |  [PHONE]')),
-      new Paragraph({ spacing: { after: 200 } }),
-      new Paragraph({ children: [new TextRun({ text: 'NOTICE: This document is a working template. All fields shown in blue must be replaced with project-specific data before submission. Red warnings indicate checklist items flagged as incomplete.', color: MUTED, italics: true, size: 18, font: 'Arial' })], alignment: AlignmentType.CENTER }),
-      pageBreak(),
+${h1('Section 2 &mdash; Geological Assessment')}
+${s2inc}
+${h2('2.1&nbsp;&nbsp;Regional Geological Setting')}
+<p>The project area is situated within the ${ph('[BASIN NAME, e.g., Western Canada Sedimentary Basin]')}, ${ph('[STRUCTURAL PROVINCE]')}. A regional stratigraphic column from Precambrian basement to surface is provided in Appendix ${ph('[X]')}.</p>
+${blank()}${hr()}
+${h2('2.2&nbsp;&nbsp;Injection Zone Characterization')}
+${field('Formation:', ph('[NAME]') + '&nbsp;&nbsp;Age: ' + ph('[period]') + '&nbsp;&nbsp;Lithology: ' + ph('[sandstone / carbonate]'))}
+${field('Gross thickness:', ph('[X m]') + '&nbsp;&nbsp;Net pay: ' + ph('[X m]') + '&nbsp;&nbsp;Net-to-gross: ' + ph('[X%]'))}
+${field('Depositional environment:', ph('[e.g., fluvial, deltaic, shallow marine]'))}
+${note('Well-log correlation panels across the AoR demonstrating formation continuity are required. Attach as Appendix [X].')}
+${blank()}${hr()}
+${h2('2.3&nbsp;&nbsp;Primary Caprock / Seal')}
+${field('Formation:', ph('[NAME]'))}
+${field('Thickness:', ph('[X m average, X m minimum across AoR]'))}
+${field('Lithology:', ph('[e.g., tight shale, anhydrite, halite]'))}
+${field('Capillary entry pressure:', ph('[X kPa]') + ' (from MICP data, Appendix ' + ph('[X]') + ')')}
+${field('Lateral continuity:', ph('[describe — any gaps, thinning, erosional truncations?]'))}
+${note('AER will scrutinize seal capacity closely. The CO\u2082 column height supportable by the caprock must exceed the buoyancy pressure of the CO\u2082 plume.')}
+${blank()}${hr()}
+${h2('2.4&nbsp;&nbsp;Structural Geology &amp; Fault Analysis')}
+${field('Structural style:', ph('[e.g., low-relief anticlinal closures, monoclinal dip]'))}
+${field('Known faults within AoR:', ph('[list fault names, orientations, throws, sealing capacity]'))}
+${field('Fault seal analysis method:', ph('[e.g., SGR, Mohr-Coulomb slip tendency analysis]'))}
+${note('Any faults within or bounding the AoR require detailed seal analysis. Assess reactivation potential under injection-induced pressure changes.')}
+${blank()}${hr()}
+${h2('2.5&nbsp;&nbsp;Hydrogeological Assessment')}
+${field('Base of Groundwater Protection (BGWP):', ph('[depth mKB]') + ' (' + ph('[formation name]') + ')')}
+${field('Depth to injection zone:', ph('[X m below BGWP — isolation confirmed]'))}
+${field('Regional flow direction:', ph('[direction and gradient]'))}
+${blank()}${hr()}
+${h2('2.6&nbsp;&nbsp;Geomechanical Assessment')}
+${field('Maximum horizontal stress (\u03c3H):', ph('[X kPa/m]') + '&nbsp;&nbsp;Azimuth: ' + ph('[degrees]'))}
+${field('Minimum horizontal stress (\u03c3h):', ph('[X kPa/m]'))}
+${field('Vertical stress (\u03c3v):', ph('[X kPa/m]'))}
+${field('Fracture gradient:', ph('[X kPa/m]') + '&nbsp;&nbsp;Max. injection pressure (90%): ' + ph('[X kPa]'))}
+${note('AER Directive 065 requires that maximum injection pressure does not exceed 90% of the minimum formation fracture pressure. Provide Mohr circle analysis.')}
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 1 ──
-      h1('Section 1 — General Information & Scheme Description'),
-      ...incompleteWarning(getIncompleteRequired(0)),
-      h2('1.1  Applicant Details'),
-      body(ph('[COMPANY LEGAL NAME]'), normal(' ("the Applicant"), a corporation incorporated under the laws of Alberta, hereby applies for approval of a CO\u2082 storage scheme pursuant to AER Directive 065. The Applicant holds AER Business Associate (BA) Code '), ph('[BA CODE]'), normal('.') ),
-      body(bold('Primary Contact:  '), ph('[CONTACT NAME]'), normal(', '), ph('[TITLE]')),
-      body(bold('Mailing Address:  '), ph('[STREET, CITY, PROVINCE, POSTAL CODE]')),
-      body(bold('Phone:            '), ph('[###-###-####]'), normal('     '), bold('Email: '), ph('[email@company.com]')),
-      note('Applicant details must match AER OneStop submission credentials exactly. Discrepancies will generate an administrative deficiency.'),
-      rule(),
-      h2('1.2  Scheme Type & Purpose'),
-      body(normal('This application describes a Class '), ph('[III / IV]'), normal(' CO\u2082 storage scheme for the purpose of permanent geological storage of anthropogenic CO\u2082. The CO\u2082 is sourced from '), ph('[CAPTURE FACILITY NAME AND LOCATION]'), normal(' via '), ph('[PIPELINE / TRUCK / OTHER]'), normal('. This is a '), ph('[NEW SCHEME / AMENDMENT TO SCHEME NO. XXXXX]'), normal('.')),
-      blank(), rule(),
-      h2('1.3  Well Location(s)'),
-      body(ph('[LSD-SEC-TWP-RGE-MER]'), normal(' — Surface coordinates: '), ph('[NAD83 latitude, longitude]'), normal('. Bottom-hole location (if deviated): '), ph('[LSD-SEC-TWP-RGE-MER]'), normal('.')),
-      note('Provide separate entries for each injection and monitoring well. Include both surface and bottom-hole LSD for deviated wells.'),
-      blank(), rule(),
-      h2('1.4  Target Formation(s)'),
-      body(bold('Formation Name:          '), ph('[FORMATION NAME]')),
-      body(bold('Top Depth (mKB / mTVD): '), ph('[depth]'), normal(' / '), ph('[depth]')),
-      body(bold('Base Depth (mKB / mTVD):'), ph('[depth]'), normal(' / '), ph('[depth]')),
-      note('If stacking multiple storage intervals, list each zone separately with formation name and depth.'),
-      blank(), rule(),
-      h2('1.5  CO\u2082 Stream Composition'),
-      body(normal('Injection stream compositional analysis (attach laboratory analysis as Appendix '), ph('[X]'), normal('):')),
-      body(bold('CO\u2082 (mol%): '), ph('[value]'), normal('     '), bold('H\u2082S (ppm): '), ph('[value]'), normal('     '), bold('CH\u2084 (mol%): '), ph('[value]')),
-      body(bold('N\u2082 (mol%): '), ph('[value]'), normal('     '), bold('H\u2082O (ppm): '), ph('[value]'), normal('     '), bold('Other: '), ph('[specify]')),
-      note('AER requires compositional data to assess corrosion risk, injectivity behaviour, and geochemical reactivity with formation fluids. Report expected range and maximum impurity concentrations.'),
-      blank(), rule(),
-      h2('1.6  Project Timeline'),
-      body(bold('Anticipated Injection Start:    '), ph('[YYYY-MM]')),
-      body(bold('Injection Duration:             '), ph('[X years]'), normal(' ('), ph('[start year]'), normal(' to '), ph('[end year]'), normal(')')),
-      body(bold('Total Design Injection Volume:  '), ph('[X Mt CO\u2082]'), normal(' ('), ph('[X kt/yr]'), normal(' average annual rate)')),
-      body(bold('Post-Injection Site Care (PISC):'), ph('[X years minimum]'), normal(', anticipated completion '), ph('[YYYY]')),
-      blank(), rule(),
-      h2('1.7  Carbon Sequestration Tenure Agreement (CSTA)'),
-      body(normal('The Applicant holds CSTA No. '), ph('[CSTA NUMBER]'), normal(' issued by the Government of Alberta under the Carbon Sequestration Tenure Regulation, effective '), ph('[DATE]'), normal(', covering all proposed well locations. A current copy of the executed CSTA is attached as Appendix '), ph('[X]'), normal('.')),
-      note('Approval No. 13513, Clause 11 — CSTA must be validated and maintained continuously. AER verifies tenure status at time of application review. An expired or lapsed CSTA is an automatic deficiency.'),
-      rule(),
-      h2('1.8  Mineral Rights & Licensee Notification'),
-      body(ph('[COMPANY LEGAL NAME]'), normal(' has reviewed pore space ownership for all proposed well locations in accordance with the Mineral Rights Act and confirms that Crown pore space rights are vested in the Applicant under the CSTA above. Affected mineral rights owners and surface lessees within '), ph('[X km]'), normal(' have been notified in accordance with AER Directive 056.')),
-      blank(),
-      pageBreak(),
+${h1('Section 3 &mdash; Reservoir Characterization &amp; Simulation')}
+${s3inc}
+${h2('3.1&nbsp;&nbsp;Reservoir Properties')}
+${field('Porosity (core):', ph('[mean X%, range X&ndash;X%]') + '&nbsp;&nbsp;(log-derived): ' + ph('[mean X%]'))}
+${field('Permeability (core):', ph('[geometric mean X mD, range X&ndash;X mD]'))}
+${field('kv/kh ratio:', ph('[X — justify anisotropy assumption]'))}
+${blank()}${hr()}
+${h2('3.2&nbsp;&nbsp;Formation Fluid Properties')}
+${field('Initial reservoir pressure:', ph('[X kPa at X mKB datum]'))}
+${field('Reservoir temperature:', ph('[X \u00b0C at X mKB]'))}
+${field('Formation water TDS:', ph('[X mg/L — brackish / saline / brine]'))}
+${field('CO&#8322; density at reservoir conditions:', ph('[X kg/m\u00b3]') + '&nbsp;&nbsp;Viscosity: ' + ph('[X mPa\u00b7s]'))}
+${field('CO&#8322; solubility in brine:', ph('[X mol/kg at reservoir P/T]'))}
+${blank()}${hr()}
+${h2('3.3&nbsp;&nbsp;Multiphase Flow Properties')}
+<p>Relative permeability (CO&#8322;-brine drainage and imbibition) and capillary pressure curves derived from ${ph('[core flood experiments on native/analogue rock / justified literature sources]')}. Data in Appendix ${ph('[X]')}.</p>
+${field('Residual CO&#8322; saturation (Sgr):', ph('[X%]') + ' &mdash; used for residual trapping calculation')}
+${blank()}${hr()}
+${h2('3.4&nbsp;&nbsp;Numerical Simulation')}
+${field('Simulator:', ph('[e.g., CMG-GEM / ECLIPSE CO2STORE / TOUGH2]'))}
+${field('Grid dimensions:', ph('[X \u00d7 Y \u00d7 Z cells, cell size X m \u00d7 X m \u00d7 X m]'))}
+${field('Boundary conditions:', ph('[open / closed aquifer — describe]'))}
+${field('Simulation period:', ph('[X years injection + X years PISC]'))}
+${note('Base case results must include: CO\u2082 plume extent maps at end of injection and end of PISC, pressure distribution, and breakthrough risk. Sensitivity cases on permeability, caprock integrity, and injection rate are required.')}
+${blank()}${hr()}
+${h2('3.5&nbsp;&nbsp;Storage Capacity &amp; Trapping')}
+${field('Static volumetric (P10 / P50 / P90):', ph('[X Mt] | [X Mt] | [X Mt]'))}
+${field('Dynamic simulation-based:', ph('[X Mt CO&#8322;]') + ' over ' + ph('[X years]'))}
+${field('Storage efficiency (Eeff):', ph('[X%] &mdash; justify against published analogues'))}
+${field('Trapping at end of PISC:', 'Structural: ' + ph('[X%]') + '&nbsp; Residual: ' + ph('[X%]') + '&nbsp; Dissolution: ' + ph('[X%]') + '&nbsp; Mineral: ' + ph('[X%]'))}
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 2 ──
-      h1('Section 2 — Geological Assessment'),
-      ...incompleteWarning(getIncompleteRequired(1)),
-      h2('2.1  Regional Geological Setting'),
-      body(normal('The project area is situated within the '), ph('[BASIN NAME, e.g., Western Canada Sedimentary Basin]'), normal(', '), ph('[STRUCTURAL PROVINCE, e.g., Alberta Syncline / Peace River Arch region]'), normal('. The regional stratigraphy is characterized by '), ph('[brief description of basin fill, depositional sequences, tectonic history relevant to storage]'), normal('. A regional stratigraphic column from Precambrian basement to surface is provided in Appendix '), ph('[X]'), normal('.')),
-      blank(), rule(),
-      h2('2.2  Injection Zone Characterization'),
-      body(bold('Formation:          '), ph('[NAME]'), normal('   '), bold('Age: '), ph('[period]'), normal('   '), bold('Lithology: '), ph('[sandstone/carbonate]')),
-      body(bold('Gross thickness:    '), ph('[X m]'), normal('   '), bold('Net pay: '), ph('[X m]'), normal('   '), bold('Net-to-gross: '), ph('[X%]')),
-      body(bold('Lateral extent:     '), ph('[describe extent, continuity across AoR]')),
-      body(bold('Depositional env.:  '), ph('[e.g., fluvial, deltaic, shallow marine]')),
-      note('Well-log correlation panels across the AoR demonstrating formation continuity are required. Attach as Appendix [X]. Highlight any lateral heterogeneities that affect storage capacity or plume migration.'),
-      blank(), rule(),
-      h2('2.3  Primary Caprock / Seal'),
-      body(bold('Formation:              '), ph('[NAME]')),
-      body(bold('Thickness:              '), ph('[X m average, X m minimum across AoR]')),
-      body(bold('Lithology:              '), ph('[e.g., tight shale, anhydrite, halite]')),
-      body(bold('Capillary entry pressure:'), ph('[X kPa]'), normal(' (from MICP data, Appendix '), ph('[X]'), normal(')')),
-      body(bold('Lateral continuity:     '), ph('[describe — any gaps, thinning, erosional truncations?]')),
-      note('AER will scrutinize seal capacity closely. CO2 column height supportable by the caprock must exceed the expected buoyancy pressure of the CO2 plume.'),
-      blank(), rule(),
-      h2('2.4  Structural Geology & Fault Analysis'),
-      body(normal('The project area is characterized by '), ph('[structural style, e.g., low-relief anticlinal closures, monoclinal dip]'), normal('. Structure maps on the top of the '), ph('[INJECTION FORMATION]'), normal(' and top of the '), ph('[SEAL FORMATION]'), normal(' are provided in Appendix '), ph('[X]'), normal('.')),
-      body(bold('Known faults within AoR: '), ph('[list fault names, orientations, throws, sealing capacity assessment]')),
-      body(bold('Fault seal analysis:     '), ph('[method used — e.g., fault rock analysis, SGR, Mohr-Coulomb slip tendency]')),
-      note('Any faults within or bounding the AoR require detailed seal analysis. Document whether faults are sealing, partially sealing, or open. Assess reactivation potential under injection-induced pressure changes.'),
-      blank(), rule(),
-      h2('2.5  Hydrogeological Assessment'),
-      body(bold('Base of Groundwater Protection (BGWP): '), ph('[depth mKB]'), normal(' ('), ph('[formation name]'), normal(')')),
-      body(bold('Depth to injection zone:               '), ph('[X m below BGWP — isolation confirmed]')),
-      body(bold('Regional flow direction:               '), ph('[direction and gradient]')),
-      body(bold('Aquifer TDS profile:                   '), ph('[attach hydraulic head maps and TDS-depth profile, Appendix X]')),
-      blank(), rule(),
-      h2('2.6  Geomechanical Assessment'),
-      body(bold('Maximum horizontal stress (\u03c3H): '), ph('[X kPa/m]'), normal('  Azimuth: '), ph('[degrees]')),
-      body(bold('Minimum horizontal stress (\u03c3h): '), ph('[X kPa/m]')),
-      body(bold('Vertical stress (\u03c3v):           '), ph('[X kPa/m]')),
-      body(bold('Formation fracture gradient:   '), ph('[X kPa/m]'), normal('  Max. injection pressure (90%): '), ph('[X kPa/m]')),
-      note('AER Directive 065 requires that maximum injection pressure does not exceed 90% of the minimum formation fracture pressure. Provide Mohr circle analysis and document the stress regime.'),
-      blank(),
-      pageBreak(),
+${h1('Section 4 &mdash; Area of Review (AoR) &amp; Well Integrity')}
+${s4inc}
+${h2('4.1&nbsp;&nbsp;AoR Delineation Methodology')}
+<p>The AoR was delineated using ${ph('[pressure-based analytical / numerical simulation / combined]')} approach per AER Directive 065. The AoR is defined as the greater of: (1) modelled CO&#8322; plume extent plus ${ph('[X km]')} buffer, and (2) area where pressure increase exceeds ${ph('[X kPa]')} above initial conditions.</p>
+${field('AoR at end of injection:', ph('[X km\u00b2 / describe shape]'))}
+${field('AoR at end of PISC:', ph('[X km\u00b2]'))}
+${note('AoR maps at two time horizons (end-of-injection, end-of-PISC) are required. Attach as Appendix [X].')}
+${blank()}${hr()}
+${h2('4.2&nbsp;&nbsp;Well Inventory &amp; Integrity Assessment')}
+<p>Total of ${ph('[X]')} wells penetrate the injection zone and/or caprock within the AoR. Complete inventory in Appendix ${ph('[X]')}.</p>
+<table><tr><th>UWI</th><th>Status</th><th>Penetrates Seal?</th><th>Integrity Risk</th><th>Action Required</th></tr>
+<tr><td>${ph('[UWI]')}</td><td>${ph('[active/suspended/abandoned, year]')}</td><td>${ph('[Yes/No]')}</td><td>${ph('[High/Med/Low]')}</td><td>${ph('[describe action and timing]')}</td></tr>
+<tr><td>${ph('[UWI]')}</td><td>${ph('[active/suspended/abandoned, year]')}</td><td>${ph('[Yes/No]')}</td><td>${ph('[High/Med/Low]')}</td><td>${ph('[describe action and timing]')}</td></tr>
+<tr><td>${ph('[add rows as needed]')}</td><td></td><td></td><td></td><td></td></tr></table>
+${hr()}
+${h2('4.3&nbsp;&nbsp;Corrective Action Plan')}
+<p>All high- and medium-risk wells will be remediated prior to injection commencement:</p>
+<p>Well ${ph('[UWI]')}: ${ph('[e.g., squeeze cementing of caprock interval — Q[X] YYYY]')}</p>
+<p>Well ${ph('[UWI]')}: ${ph('[e.g., re-abandonment with CO\u2082-resistant cement — Q[X] YYYY]')}</p>
+${note('AER will not approve injection until all high-integrity-risk wells have documented corrective actions with confirmed timelines.')}
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 3 ──
-      h1('Section 3 — Reservoir Characterization & Simulation'),
-      ...incompleteWarning(getIncompleteRequired(2)),
-      h2('3.1  Reservoir Properties'),
-      body(bold('Porosity (core):       '), ph('[mean X%, range X-X%]'), normal('   '), bold('(log-derived): '), ph('[mean X%]')),
-      body(bold('Permeability (core):   '), ph('[geometric mean X mD, range X-X mD]')),
-      body(bold('Permeability (kv/kh):  '), ph('[ratio X — justify anisotropy assumption]')),
-      body(bold('Net pay thickness:     '), ph('[X m]'), normal('   '), bold('Net-to-gross: '), ph('[X%]')),
-      blank(), rule(),
-      h2('3.2  Formation Fluid Properties'),
-      body(bold('Initial reservoir pressure: '), ph('[X kPa at X mKB datum]')),
-      body(bold('Reservoir temperature:      '), ph('[X \u00b0C at X mKB]')),
-      body(bold('Formation water TDS:        '), ph('[X mg/L — classify: brackish/saline/brine]')),
-      body(bold('CO\u2082 density at res. cond.:  '), ph('[X kg/m\u00b3]'), normal('   '), bold('Viscosity: '), ph('[X mPa\u00b7s]')),
-      body(bold('CO\u2082 solubility in brine:   '), ph('[X mol/kg at reservoir P/T]')),
-      blank(), rule(),
-      h2('3.3  Multiphase Flow Properties'),
-      body(normal('Relative permeability (CO\u2082-brine drainage and imbibition) and capillary pressure curves are derived from '), ph('[core flood experiments on native/analogue rock / justified literature sources]'), normal('. Data provided in Appendix '), ph('[X]'), normal('.')),
-      body(bold('Residual CO\u2082 saturation (Sgr): '), ph('[X%]'), normal(' — used for residual trapping calculation.')),
-      blank(), rule(),
-      h2('3.4  Numerical Simulation'),
-      body(bold('Simulator:           '), ph('[e.g., CMG-GEM v20XX / ECLIPSE CO2STORE / TOUGH2]')),
-      body(bold('Grid dimensions:     '), ph('[X \u00d7 Y \u00d7 Z cells, cell size X m \u00d7 X m \u00d7 X m]')),
-      body(bold('Boundary conditions: '), ph('[open/closed aquifer, describe]')),
-      body(bold('Simulation period:   '), ph('[X years injection + X years PISC]')),
-      note('Base case simulation results must include: CO2 plume extent maps at end of injection and end of PISC, pressure distribution maps, and breakthrough risk assessment. Sensitivity cases on permeability, caprock integrity, and injection rate are required.'),
-      blank(), rule(),
-      h2('3.5  Storage Capacity & Trapping'),
-      body(bold('Static volumetric estimate: '), ph('[P10: X Mt | P50: X Mt | P90: X Mt]')),
-      body(bold('Dynamic (simulation-based): '), ph('[X Mt CO\u2082]'), normal(' over '), ph('[X years]')),
-      body(bold('Storage efficiency (Eeff):  '), ph('[X%] — justify against published analogues')),
-      body(bold('Trapping at end of PISC:   '), normal('Structural/stratigraphic: '), ph('[X%]'), normal('  |  Residual: '), ph('[X%]'), normal('  |  Dissolution: '), ph('[X%]'), normal('  |  Mineral: '), ph('[X%]')),
-      blank(),
-      pageBreak(),
+${h1('Section 5 &mdash; Injection Well Design &amp; Operations')}
+${s5inc}
+${h2('5.1&nbsp;&nbsp;Well Construction')}
+<p><strong>Surface casing:</strong> ${ph('[size in., grade, weight ppf, connection, set depth mKB]')}</p>
+<p><strong>Intermediate casing:</strong> ${ph('[size in., grade, weight ppf, set depth mKB — if applicable]')}</p>
+<p><strong>Injection casing:</strong> ${ph('[size in., grade e.g. 13Cr-110, weight ppf, set depth mKB]')}</p>
+<p><strong>Cement type:</strong> ${ph('[CO\u2082-resistant blend, e.g., Class G + silica flour + corrosion inhibitor]')}</p>
+<p><strong>TOC (planned):</strong> ${ph('[depth mKB — must cover caprock + X m above]')}&nbsp;&nbsp;<strong>Verification:</strong> ${ph('[CBL/VDL within X months of cementing]')}</p>
+${blank()}${hr()}
+${h2('5.2&nbsp;&nbsp;Injection Parameters')}
+${field('Max. injection rate:', ph('[X t/d CO&#8322;]'))}
+${field('Max. surface injection pressure:', ph('[X kPa]'))}
+${field('Max. bottomhole injection pressure:', ph('[X kPa]') + ' (' + ph('[X%]') + ' of fracture gradient at ' + ph('[X mKB]') + ')')}
+${field('Injection temperature at surface:', ph('[X \u00b0C range]'))}
+${field('Injectivity index:', ph('[X t/d/kPa from well test / simulation]'))}
+${blank()}${hr()}
+${h2('5.3&nbsp;&nbsp;Annular Monitoring &amp; Well Integrity During Operations')}
+<p>Continuous annular pressure monitoring on the ${ph('[casing-tubing / production-intermediate annulus]')}. Alarm threshold for sustained casing pressure (SCP): ${ph('[X kPa]')}. Response protocol: ${ph('[describe — shut-in, notification, investigation]')}. Data transmitted to SCADA in real-time.</p>
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 4 ──
-      h1('Section 4 — Area of Review (AoR) & Well Integrity'),
-      ...incompleteWarning(getIncompleteRequired(3)),
-      h2('4.1  AoR Delineation Methodology'),
-      body(normal('The AoR was delineated using '), ph('[pressure-based analytical method / numerical simulation / combined approach]'), normal(' in accordance with AER Directive 065 requirements. The AoR is defined as the greater of: (1) the modelled CO\u2082 plume extent plus a '), ph('[X km]'), normal(' buffer, and (2) the area where reservoir pressure increase exceeds '), ph('[X kPa]'), normal(' above initial conditions.')),
-      body(bold('AoR at end of injection:       '), ph('[X km\u00b2 / describe shape]')),
-      body(bold('AoR at end of PISC (\u2264\u00a0closure): '), ph('[X km\u00b2]')),
-      note('AoR maps at two time horizons (end-of-injection, end-of-PISC) are required. Attach as Appendix [X].'),
-      blank(), rule(),
-      h2('4.2  Well Inventory & Integrity Assessment'),
-      body(normal('A total of '), ph('[X]'), normal(' wells penetrate the injection zone and/or caprock within the AoR. The complete inventory with well integrity classifications is provided in Appendix '), ph('[X]'), normal('.')),
-      body(bold('High integrity risk:    '), ph('[X wells — list UWIs]')),
-      body(bold('Medium integrity risk:  '), ph('[X wells — list UWIs]')),
-      body(bold('Low integrity risk:     '), ph('[X wells]')),
-      rule(),
-      h2('4.3  Corrective Action Plan'),
-      body(normal('All high- and medium-risk wells will be remediated prior to injection commencement. Proposed actions:')),
-      body(bold('Well '), ph('[UWI]'), normal(': '), ph('[e.g., squeeze cementing of caprock interval — Q[X] YYYY]')),
-      body(bold('Well '), ph('[UWI]'), normal(': '), ph('[e.g., re-abandonment with CO2-resistant cement — Q[X] YYYY]')),
-      note('AER will not approve injection until all high-integrity-risk wells have documented corrective actions with confirmed timelines.'),
-      blank(),
-      pageBreak(),
+${h1('Section 6 &mdash; Risk Assessment')}
+${s6inc}
+${h2('6.1&nbsp;&nbsp;FEP Analysis')}
+<p>A systematic Features, Events, and Processes (FEP) analysis was conducted using the ${ph('[Quintessa CO\u2082 FEP database v2.X / TNO / custom framework]')}. A total of ${ph('[X]')} FEPs were identified; ${ph('[X]')} retained after documented screening. FEP register attached as Appendix ${ph('[X]')}.</p>
+${blank()}${hr()}
+${h2('6.2&nbsp;&nbsp;Risk Register')}
+<p>Risk register in Appendix ${ph('[X]')} — ${ph('[X]')} risks: Containment (${ph('[X]')}), Conformance (${ph('[X]')}), Operational (${ph('[X]')}), HSE (${ph('[X]')}).</p>
+<table><tr><th>Risk Description</th><th>Likelihood (1&ndash;5)</th><th>Consequence (1&ndash;5)</th><th>Rank</th><th>Key Control</th></tr>
+<tr><td>${ph('[e.g., CO\u2082 migration through caprock fracture]')}</td><td>${ph('[L]')}</td><td>${ph('[C]')}</td><td>${ph('[HIGH/MED/LOW]')}</td><td>${ph('[describe]')}</td></tr>
+<tr><td>${ph('[e.g., well integrity failure]')}</td><td>${ph('[L]')}</td><td>${ph('[C]')}</td><td>${ph('[HIGH/MED/LOW]')}</td><td>${ph('[describe]')}</td></tr>
+<tr><td>${ph('[e.g., induced seismicity above TLP]')}</td><td>${ph('[L]')}</td><td>${ph('[C]')}</td><td>${ph('[HIGH/MED/LOW]')}</td><td>${ph('[describe]')}</td></tr></table>
+${hr()}
+${h2('6.3&nbsp;&nbsp;Induced Seismicity &amp; Traffic Light Protocol (TLP)')}
+<p>Baseline seismicity within ${ph('[X km]')}: ${ph('[X events/year, max Mw X over past X years]')} based on ${ph('[data source]')}. TLP per AER Subsurface Order No. 2:</p>
+${field('<span style="color:green">GREEN (proceed normally):</span>', ph('[Mw &lt; X.X]'))}
+${field('<span style="color:#e67e22">YELLOW (reduce rate X%):</span>', ph('[X.X \u2264 Mw &lt; X.X — notify AER within 24h]'))}
+${field('<span style="color:red">RED (immediate shut-in):</span>', ph('[Mw \u2265 X.X — notify AER immediately]'))}
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 5 ──
-      h1('Section 5 — Injection Well Design & Operations'),
-      ...incompleteWarning(getIncompleteRequired(4)),
-      h2('5.1  Well Construction'),
-      body(bold('Casing program:')),
-      body(normal('  Surface casing: '), ph('[size in., grade, weight ppf, connection, set depth mKB]')),
-      body(normal('  Intermediate casing: '), ph('[size in., grade, weight ppf, set depth mKB — if applicable]')),
-      body(normal('  Production/injection casing: '), ph('[size in., grade e.g. 13Cr-110, weight ppf, set depth mKB]')),
-      body(bold('Cement program:')),
-      body(normal('  Cement type: '), ph('[CO\u2082-resistant blend, e.g., Class G + silica flour + corrosion inhibitor]')),
-      body(normal('  TOC (planned): '), ph('[depth mKB — must cover caprock + X m above]')),
-      body(normal('  Verification: '), ph('[CBL/VDL / Ultrasonic log within X months of cementing]')),
-      blank(), rule(),
-      h2('5.2  Injection Parameters'),
-      body(bold('Max. injection rate:                '), ph('[X t/d CO\u2082]')),
-      body(bold('Max. surface injection pressure:    '), ph('[X kPa]')),
-      body(bold('Max. bottomhole injection pressure: '), ph('[X kPa]'), normal(' ('), ph('[X%]'), normal(' of fracture gradient at '), ph('[X mKB]'), normal(')')),
-      body(bold('Injection temperature (surface):    '), ph('[X \u00b0C range]')),
-      body(bold('Injectivity index:                  '), ph('[X t/d/kPa from well test / simulation]')),
-      blank(), rule(),
-      h2('5.3  Annular Monitoring & Well Integrity During Operations'),
-      body(normal('Continuous annular pressure monitoring will be maintained on the '), ph('[casing-tubing annulus / production-intermediate annulus]'), normal('. Alarm threshold for sustained casing pressure (SCP): '), ph('[X kPa]'), normal('. Response protocol: '), ph('[describe — shut-in, notification, investigation]'), normal('. Data transmitted to SCADA in real-time.')),
-      blank(),
-      pageBreak(),
+${h1('Section 7 &mdash; Measurement, Monitoring &amp; Verification (MMV)')}
+${s7inc}
+${h2('7.1&nbsp;&nbsp;MMV Philosophy &amp; Phasing')}
+<p>${ph('[COMPANY LEGAL NAME]')}&rsquo;s MMV program follows risk-based, adaptive management principles with three phases: (1) Pre-injection baseline (${ph('[X months]')}), (2) Operational monitoring (injection + ${ph('[X years post-injection]')}), and (3) PISC monitoring (${ph('[X years, with adaptive reduction]')}).</p>
+${blank()}${hr()}
+${h2('7.2&nbsp;&nbsp;Baseline Program (Pre-Injection)')}
+${field('Duration:', ph('[minimum 12 months]'))}
+${field('Groundwater sampling:', ph('[X wells, quarterly, parameters: pH, TDS, major ions, dissolved gases]'))}
+${field('Soil gas baseline:', ph('[X surface locations, biannual CO\u2082/CH\u2084 flux]'))}
+${field('Formation pressure:', ph('[continuous gauge in X observation well(s)]'))}
+${field('Seismic baseline:', ph('[2D/3D baseline survey — timing and acquisition parameters]'))}
+${note('Inadequate baseline data is one of the most common SIR triggers. Collect enough data points to characterize natural variability. This is what AER will compare operational data against.')}
+${blank()}${hr()}
+${h2('7.3&nbsp;&nbsp;Operational Monitoring')}
+${field('Wellhead (continuous):', ph('[injection rate, surface P/T — SCADA 1-min interval]'))}
+${field('Downhole gauges:', ph('[permanent gauge at X mKB — P/T, monthly download]'))}
+${field('Observation wells:', ph('[X wells — formation pressure monthly, above-zone semi-annually]'))}
+${field('Groundwater:', ph('[X monitoring wells, semi-annual sampling]'))}
+${field('Soil gas:', ph('[seasonal surveys — anomaly threshold: CO\u2082 flux &gt; X g/m\u00b2/d]'))}
+${field('Time-lapse seismic:', ph('[4D survey every X years for conformance]'))}
+${field('Hall Plot analysis:', ph('[annual — included in Annual MMV Report per standard approval conditions]'))}
+${blank()}${hr()}
+${h2('7.4&nbsp;&nbsp;Post-Injection &amp; PISC Monitoring')}
+<p>Following injection cessation, monitoring continues at reduced frequency for minimum ${ph('[X years]')}. Frequency reduction criteria: (1) pressure stabilization within ${ph('[X kPa]')} of model prediction, (2) plume within ${ph('[X%]')} of P50 simulation, (3) no anomalies in groundwater or soil gas for ${ph('[X consecutive monitoring cycles]')}.</p>
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 6 ──
-      h1('Section 6 — Risk Assessment'),
-      ...incompleteWarning(getIncompleteRequired(5)),
-      h2('6.1  FEP Analysis'),
-      body(normal('A systematic Features, Events, and Processes (FEP) analysis was conducted using the '), ph('[Quintessa CO\u2082 FEP database v2.X / TNO / custom framework]'), normal('. A total of '), ph('[X]'), normal(' FEPs were identified, of which '), ph('[X]'), normal(' were screened out with documented rationale. The retained FEP register is provided in Appendix '), ph('[X]'), normal('.')),
-      blank(), rule(),
-      h2('6.2  Risk Register'),
-      body(normal('The risk register (Appendix '), ph('[X]'), normal(') contains '), ph('[X]'), normal(' risks organized by category: Containment ('), ph('[X]'), normal('), Conformance ('), ph('[X]'), normal('), Operational ('), ph('[X]'), normal('), HSE ('), ph('[X]'), normal('). Top-ranked risks with bow-tie diagrams:')),
-      body(bold('Risk 1 — '), ph('[e.g., CO\u2082 migration through caprock fracture]: L=X, C=X, Rank='), ph('[HIGH/MED/LOW]')),
-      body(bold('Risk 2 — '), ph('[e.g., well integrity failure in legacy well]: L=X, C=X, Rank='), ph('[HIGH/MED/LOW]')),
-      body(bold('Risk 3 — '), ph('[e.g., induced seismicity above TLP threshold]: L=X, C=X, Rank='), ph('[HIGH/MED/LOW]')),
-      blank(), rule(),
-      h2('6.3  Induced Seismicity & Traffic Light Protocol (TLP)'),
-      body(normal('Baseline seismicity within '), ph('[X km]'), normal(' of the project area is characterized by '), ph('[X events/year, max Mw X over past X years]'), normal(' based on '), ph('[data source]'), normal('. The following Traffic Light Protocol is proposed per AER Subsurface Order No. 2:')),
-      body(bold('GREEN  (proceed normally):  '), ph('[Mw < X.X]')),
-      body(bold('YELLOW (reduce rate by X%): '), ph('[X.X \u2264 Mw < X.X]')),
-      body(bold('RED    (shut-in immediately):'), ph('[Mw \u2265 X.X]')),
-      blank(),
-      pageBreak(),
+${h1('Section 8 &mdash; Public Consultation &amp; Stakeholder Engagement')}
+${s8inc}
+${h2('8.1&nbsp;&nbsp;Participant Involvement Program (D056)')}
+<p>${ph('[COMPANY LEGAL NAME]')} conducted a Participant Involvement Program (PIP) per AER Directive 056. Notification letters sent to ${ph('[X]')} directly affected parties within ${ph('[X km]')} radius. Consultation summary in Appendix ${ph('[X]')}.</p>
+${field('Notification date(s):', ph('[YYYY-MM-DD]'))}
+${field('Response deadline:', ph('[YYYY-MM-DD (28-day minimum)]'))}
+${field('Concerns raised:', ph('[X concerns — summarize by category: groundwater, seismicity, surface disturbance]'))}
+${field('Resolution:', ph('[describe how each concern was addressed or remains under discussion]'))}
+${blank()}${hr()}
+${h2('8.2&nbsp;&nbsp;Indigenous Consultation')}
+<p>Crown consultation with ${ph('[First Nation / M\u00e9tis Settlement names]')} was conducted by ${ph('[proponent / Alberta Crown / jointly]')} commencing ${ph('[date]')}. Consultation record in Appendix ${ph('[X]')}.</p>
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 7 ──
-      h1('Section 7 — Measurement, Monitoring & Verification (MMV)'),
-      ...incompleteWarning(getIncompleteRequired(6)),
-      h2('7.1  MMV Philosophy & Phasing'),
-      body(ph('[COMPANY LEGAL NAME]'), normal('\'s MMV program is designed on risk-based, adaptive management principles. The program is structured in three phases: (1) Pre-injection baseline ('), ph('[X months]'), normal('), (2) Operational monitoring (injection duration + '), ph('[X years post-injection]'), normal('), and (3) PISC monitoring ('), ph('[X years, with adaptive reduction]'), normal(').')),
-      blank(), rule(),
-      h2('7.2  Baseline Program (Pre-Injection)'),
-      body(bold('Duration:                 '), ph('[minimum 12 months — specify actual planned period]')),
-      body(bold('Groundwater sampling:     '), ph('[X domestic/monitoring wells, quarterly, parameters: pH, TDS, major ions, dissolved gases]')),
-      body(bold('Soil gas baseline:        '), ph('[X surface locations, biannual sampling, CO\u2082/CH\u2084 flux]')),
-      body(bold('Formation pressure:       '), ph('[continuous gauge in X observation well(s), 1-month calibration period]')),
-      body(bold('Seismic baseline:         '), ph('[2D/3D baseline survey — timing and acquisition parameters]')),
-      note('Inadequate baseline data is one of the most common SIR triggers. Collect statistical baselines with enough data points to characterize natural variability. This is what AER will compare operational data against.'),
-      blank(), rule(),
-      h2('7.3  Operational Monitoring'),
-      body(bold('Wellhead (continuous):    '), ph('[injection rate, surface pressure, temperature — SCADA, 1-minute interval]')),
-      body(bold('Downhole gauges:          '), ph('[permanent gauge at X mKB — pressure/temperature, monthly download]')),
-      body(bold('Observation wells:        '), ph('[X wells — formation pressure monthly, above-zone interval semi-annually]')),
-      body(bold('Groundwater:              '), ph('[X monitoring wells, semi-annual sampling during injection]')),
-      body(bold('Soil gas:                 '), ph('[seasonal surveys, anomaly investigation threshold: CO\u2082 flux > X g/m\u00b2/d]')),
-      body(bold('Time-lapse seismic:       '), ph('[4D survey every X years for conformance — acquisition program in Appendix X]')),
-      body(bold('Hall Plot analysis:       '), ph('[annual, as required by Clause 21(g) of standard approvals — included in Annual MMV Report]')),
-      blank(), rule(),
-      h2('7.4  Post-Injection & PISC Monitoring'),
-      body(normal('Following injection cessation, monitoring will continue at reduced frequency for a minimum of '), ph('[X years]'), normal('. Monitoring frequency reduction criteria: (1) pressure stabilization within '), ph('[X kPa]'), normal(' of predicted model, (2) plume extent within '), ph('[X%]'), normal(' of P50 simulation, (3) no anomalies detected in groundwater or soil gas for '), ph('[X consecutive monitoring cycles]'), normal('.')),
-      blank(),
-      pageBreak(),
+${h1('Section 9 &mdash; Emergency Response Plan (ERP)')}
+${s9inc}
+${h2('9.1&nbsp;&nbsp;Emergency Planning Zone (EPZ)')}
+<p>EPZ calculated per AER Directive 071 using ${ph('[PHAST / SAFETI / other dispersion model]')}. Worst-case release: ${ph('[full-bore tubing failure, X t/d CO\u2082]')}. EPZ radius: ${ph('[X m]')}. ${ph('[X]')} residents and ${ph('[X]')} structures within EPZ. Dispersion modelling report in Appendix ${ph('[X]')}.</p>
+${blank()}${hr()}
+${h2('9.2&nbsp;&nbsp;Response Procedures &amp; Notification')}
+${field('Incident detection:', ph('[automated SCADA alarm / wellsite personnel / public report]'))}
+${field('Initial assessment:', ph('[wellsite supervisor within X minutes, categorize Tier 1/2/3]'))}
+${field('AER emergency line:', '1-800-222-6514 &mdash; notify within ' + ph('[X hours]') + ' of confirmed incident')}
+${field('Local authority:', ph('[municipal/county emergency line — notify within X hours]'))}
+${note('Decision trees for each emergency scenario must be attached as appendices. Test the ERP annually with a tabletop exercise.')}
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 8 ──
-      h1('Section 8 — Public Consultation & Stakeholder Engagement'),
-      ...incompleteWarning(getIncompleteRequired(7)),
-      h2('8.1  Participant Involvement Program (D056)'),
-      body(ph('[COMPANY LEGAL NAME]'), normal(' conducted a Participant Involvement Program (PIP) in accordance with AER Directive 056. Notification letters were sent to '), ph('[X]'), normal(' directly affected parties within the prescribed radius of '), ph('[X km]'), normal(' from proposed well locations. The consultation summary is provided in Appendix '), ph('[X]'), normal('.')),
-      body(bold('Notification date(s):          '), ph('[YYYY-MM-DD]')),
-      body(bold('Response deadline provided:    '), ph('[YYYY-MM-DD (28-day minimum)]')),
-      body(bold('Concerns raised:               '), ph('[X concerns — summarize by category: groundwater, seismicity, surface disturbance, etc.]')),
-      body(bold('Resolution:                    '), ph('[describe how each concern was addressed or remains under discussion]')),
-      blank(), rule(),
-      h2('8.2  Indigenous Consultation'),
-      body(normal('Crown consultation with '), ph('[First Nation / Métis Settlement names]'), normal(' was conducted by '), ph('[proponent / Alberta Crown / jointly]'), normal(' commencing '), ph('[date]'), normal('. The Applicant supplemented Crown consultation with direct engagement including '), ph('[meetings, site visits, information packages]'), normal('. A consultation record is provided in Appendix '), ph('[X]'), normal('.')),
-      blank(),
-      pageBreak(),
+${h1('Section 10 &mdash; Financial Assurance &amp; Liability')}
+${s10inc}
+${h2('10.1&nbsp;&nbsp;Closure Cost Estimate')}
+<table><tr><th>Item</th><th>Estimated Cost</th></tr>
+<tr><td>Well abandonment (${ph('[X]')} wells)</td><td>$${ph('[X,XXX,XXX]')}</td></tr>
+<tr><td>Facility decommissioning</td><td>$${ph('[X,XXX,XXX]')}</td></tr>
+<tr><td>Surface reclamation</td><td>$${ph('[X,XXX,XXX]')}</td></tr>
+<tr><td>Post-closure monitoring (${ph('[X]')} years)</td><td>$${ph('[X,XXX,XXX]')}</td></tr>
+<tr><td>Contingency (${ph('[X%]')})</td><td>$${ph('[X,XXX,XXX]')}</td></tr>
+<tr><td><strong>TOTAL</strong></td><td><strong>$${ph('[XX,XXX,XXX]')}</strong></td></tr></table>
+${note('Use current AER cost benchmarks. Contingency should be 15-25% of direct costs. Financial security must cover the full total.')}
+${hr()}
+${h2('10.2&nbsp;&nbsp;Financial Security &amp; LMR')}
+${field('Security instrument:', ph('[irrevocable letter of credit / surety bond / cash deposit]'))}
+${field('Issuing institution:', ph('[bank/surety company name, credit rating]'))}
+${field('Amount secured:', '$' + ph('[XX,XXX,XXX]') + ' &mdash; equal to full closure cost estimate')}
+${field('LMR status:', ph('[current ratio X.XX — confirm \u22651.0 at time of application]'))}
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 9 ──
-      h1('Section 9 — Emergency Response Plan (ERP)'),
-      ...incompleteWarning(getIncompleteRequired(8)),
-      h2('9.1  Emergency Planning Zone (EPZ)'),
-      body(normal('The EPZ was calculated in accordance with AER Directive 071 using '), ph('[PHAST / SAFETI / other dispersion model]'), normal('. Worst-case release scenario: '), ph('[describe — e.g., full-bore tubing rupture at wellhead, X t/d CO\u2082]'), normal('. EPZ radius: '), ph('[X m]'), normal('. '), ph('[X]'), normal(' residents and '), ph('[X]'), normal(' surface structures fall within the EPZ.')),
-      note('For pure CO2 streams, the EPZ is based on CO2 dispersion modeling. For streams containing H2S, EPZ must be calculated on H2S toxicity (IDLH/ERPG limits). Attach dispersion modeling report as Appendix [X].'),
-      blank(), rule(),
-      h2('9.2  Response Procedures & Notification'),
-      body(bold('Incident detection:    '), ph('[automated SCADA alarm, wellsite personnel, public report]')),
-      body(bold('Initial assessment:    '), ph('[wellsite supervisor within X minutes, categorize as Tier 1/2/3]')),
-      body(bold('AER emergency line:    '), normal('1-800-222-6514 — notify within '), ph('[X hours]'), normal(' of confirmed incident')),
-      body(bold('Local authority:       '), ph('[municipal/county emergency line, notify within X hours]')),
-      body(bold('Affected residents:    '), ph('[notification method and timeline for each tier]')),
-      note('Decision trees for each emergency scenario (wellhead leak, SCP exceedance, seismic event at RED threshold, surface CO2 detection) must be attached as appendices. Test the ERP annually with a tabletop exercise.'),
-      blank(),
-      pageBreak(),
+${h1('Section 11 &mdash; Closure &amp; Post-Injection Site Care (PISC)')}
+${s11inc}
+${h2('11.1&nbsp;&nbsp;Well Abandonment Plan')}
+<p>All injection and monitoring wells abandoned per AER Directive 020 using CO&#8322;-resistant cement:</p>
+<p>Injection well(s) ${ph('[UWI]')}: ${ph('[abandonment procedure, timing]')}</p>
+<p>Monitoring well(s) ${ph('[UWI]')}: ${ph('[defer abandonment until PISC monitoring obligations fulfilled]')}</p>
+${note('CO\u2082-resistant cement is mandatory for all plugs across the injection zone and caprock intervals. Pressure-test each plug before proceeding.')}
+${blank()}${hr()}
+${h2('11.2&nbsp;&nbsp;Closure Criteria')}
+<p>Site closure and liability transfer to the Crown initiated when all of the following criteria are met:</p>
+<ol style="margin:6px 0 6px 20px">
+<li>Reservoir pressure stabilized within ${ph('[X kPa]')} of pre-injection levels for ${ph('[X]')} consecutive annual readings.</li>
+<li>CO&#8322; plume extent within ${ph('[X%]')} of P50 simulation and showing no unexpected expansion.</li>
+<li>No anomalies in groundwater, soil gas, or above-zone pressure for ${ph('[X years]')}.</li>
+<li>All wells abandoned per D020 with confirmed cement integrity.</li>
+<li>Surface reclamation certified by a qualified professional.</li>
+</ol>
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 10 ──
-      h1('Section 10 — Financial Assurance & Liability'),
-      ...incompleteWarning(getIncompleteRequired(9)),
-      h2('10.1  Closure Cost Estimate'),
-      body(bold('Well abandonment ('), ph('[X wells]'), normal('):          $'), ph('[X,XXX,XXX]')),
-      body(bold('Facility decommissioning:          $'), ph('[X,XXX,XXX]')),
-      body(bold('Surface reclamation:               $'), ph('[X,XXX,XXX]')),
-      body(bold('Post-closure monitoring ('), ph('[X yrs]'), normal('): $'), ph('[X,XXX,XXX]')),
-      body(bold('Contingency ('), ph('[X%]'), normal('):                    $'), ph('[X,XXX,XXX]')),
-      body(bold('TOTAL CLOSURE COST ESTIMATE:       $'), ph('[XX,XXX,XXX]')),
-      note('Use current AER cost benchmarks. Contingency should be 15-25% of direct costs. The financial security instrument must cover the full total.'),
-      blank(), rule(),
-      h2('10.2  Financial Security & LMR'),
-      body(bold('Security instrument:   '), ph('[irrevocable letter of credit / surety bond / cash deposit]')),
-      body(bold('Issuing institution:   '), ph('[bank/surety company name, rating]')),
-      body(bold('Amount secured:        $'), ph('[XX,XXX,XXX]'), normal(' — equal to full closure cost estimate')),
-      body(bold('Expiry / renewal:      '), ph('[annual renewal mechanism described]')),
-      body(bold('LMR status:            '), ph('[current ratio X.XX — confirm \u22651.0 at time of application]')),
-      blank(),
-      pageBreak(),
+${h1('Section 12 &mdash; Environmental Assessment')}
+${s12inc}
+${h2('12.1&nbsp;&nbsp;Environmental Impact Assessment')}
+<p>A ${ph('[Detailed / Screening-level]')} environmental impact assessment was completed by ${ph('[COMPANY NAME, qualified professional name, P.Eng./P.Geo.]')} in ${ph('[YYYY-MM]')}. Assessment covered: surface disturbance (${ph('[X ha]')}), vegetation clearing, wildlife and habitat, wetlands, and historical resources. ${ph('[Copy provided as Appendix X / EPEA approval not required because [reason]]')}.</p>
+${blank()}${hr()}
+${h2('12.2&nbsp;&nbsp;GHG Accounting &amp; Net Storage Quantification')}
+${field('Total CO&#8322; injected (design):', ph('[X Mt over X years]'))}
+${field('Operational GHG emissions:', ph('[X kt CO&#8322;e/yr — capture, compression, transport, injection]'))}
+${field('Net CO&#8322; permanently stored:', ph('[X Mt CO&#8322;e — per Alberta TIER / federal OBPS protocol]'))}
+${note('Quantification protocol for carbon credits must comply with the Alberta Quantification Protocol for CO\u2082 Capture and Geological Storage or the applicable federal equivalent. Engage a verification body early.')}
+${blank()}
+${pageBreak()}
 
-      // ── SECTION 11 ──
-      h1('Section 11 — Closure & Post-Injection Site Care (PISC)'),
-      ...incompleteWarning(getIncompleteRequired(10)),
-      h2('11.1  Well Abandonment Plan'),
-      body(normal('All injection and monitoring wells will be abandoned in accordance with AER Directive 020 using CO\u2082-resistant cement. Abandonment sequence and timeline:')),
-      body(bold('Injection well(s):    '), ph('[UWI — abandonment procedure summary, timing]')),
-      body(bold('Monitoring well(s):   '), ph('[UWI — abandonment procedure summary, timing — defer until monitoring obligations fulfilled]')),
-      note('CO2-resistant cement is mandatory for all plugs across the injection zone and caprock intervals. Reference the specific cement blend from Section 5.1. Pressure-test each plug before proceeding to the next.'),
-      blank(), rule(),
-      h2('11.2  Closure Criteria'),
-      body(normal('Site closure and application for liability transfer to the Crown will be initiated when all of the following measurable criteria are met:')),
-      body(normal('  1.  Reservoir pressure has stabilized within '), ph('[X kPa]'), normal(' of pre-injection levels for '), ph('[X consecutive monitoring cycles]'), normal('.')),
-      body(normal('  2.  CO\u2082 plume extent is within '), ph('[X%]'), normal(' of the P50 simulation prediction and showing no unexpected expansion.')),
-      body(normal('  3.  No anomalies detected in groundwater chemistry, soil gas, or above-zone pressure for '), ph('[X years]'), normal('.')),
-      body(normal('  4.  All wells abandoned per D020 with confirmed cement integrity.')),
-      body(normal('  5.  Surface reclamation certified by a qualified professional.')),
-      blank(),
-      pageBreak(),
+${h1('Submission Package Checklist')}
+${s13inc}
+<p>The following items are included in this application submitted via AER OneStop (account: ${ph('[ONESTOP ACCOUNT ID]')}):</p>
+<table><tr><th>Item</th><th>Description</th><th>Included?</th></tr>
+<tr><td>Cover letter</td><td>Signed by authorized representative of ${ph('[COMPANY LEGAL NAME]')}</td><td>${ph('[ ]')}</td></tr>
+<tr><td>This application document</td><td>All 12 sections complete with supporting data</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix A</td><td>Well location maps (surface and bottom-hole) &mdash; NAD83</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix B</td><td>CO&#8322; stream compositional analysis &mdash; laboratory certificate</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix C</td><td>Geological cross-sections and well-log correlation panels</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix D</td><td>Reservoir simulation report (base case + sensitivities)</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix E</td><td>AoR maps (end of injection and end of PISC)</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix F</td><td>Well integrity assessment &mdash; complete inventory table</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix G</td><td>Wellbore schematic and casing/cement program</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix H</td><td>FEP analysis and risk register</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix I</td><td>MMV plan &mdash; detailed monitoring protocols</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix J</td><td>Consultation record (D056 PIP, Indigenous engagement)</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix K</td><td>Emergency Response Plan with decision trees</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix L</td><td>Closure cost estimate (itemized)</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix M</td><td>CSTA &mdash; current executed copy</td><td>${ph('[ ]')}</td></tr>
+<tr><td>Appendix N</td><td>Digital data package (GIS files, simulation decks, well logs)</td><td>${ph('[ ]')}</td></tr></table>
+<br>
+${field('OneStop fees paid:', ph('[confirmation number]') + '&nbsp;&nbsp;&nbsp;Date: ' + ph('[YYYY-MM-DD]'))}
+${field('Petrinex CO&#8322; injection scheme code prepared:', ph('[CO2/N_A/INJ/CARBON SEQU]'))}
+<br><br>
+<p style="font-style:italic;color:#555;font-size:10pt">I certify that the information contained in this application is accurate and complete to the best of my knowledge.</p>
+${field('Authorized Signatory:', ph('[NAME, TITLE]') + '&nbsp;&nbsp;&nbsp;Date: ' + ph('[YYYY-MM-DD]'))}
+<p><strong>Signature:</strong>&nbsp;&nbsp;_______________________________________________</p>
+</body></html>`;
 
-      // ── SECTION 12 ──
-      h1('Section 12 — Environmental Assessment'),
-      ...incompleteWarning(getIncompleteRequired(11)),
-      h2('12.1  Environmental Impact Assessment'),
-      body(normal('A '), ph('[Detailed / Screening-level]'), normal(' environmental impact assessment was completed by '), ph('[COMPANY NAME, qualified professional name, P.Eng./P.Geo.]'), normal(' in '), ph('[YYYY-MM]'), normal('. The assessment considered: surface disturbance ('), ph('[X ha]'), normal('), vegetation clearing, wildlife and habitat, wetlands, historical resources, and noise. '), ph('[A copy is provided as Appendix X / An EPEA approval is not required because [reason]]'), normal('.')),
-      blank(), rule(),
-      h2('12.2  GHG Accounting & Net Storage Quantification'),
-      body(bold('Total CO\u2082 injected (design):   '), ph('[X Mt over X years]')),
-      body(bold('Operational GHG emissions:     '), ph('[X kt CO\u2082e/yr — capture, compression, transport, injection]')),
-      body(bold('Net CO\u2082 permanently stored:   '), ph('[X Mt CO\u2082e — quantified per Alberta TIER / federal OBPS protocol]')),
-      note('Quantification protocol for carbon credit generation must comply with the applicable offset protocol (Alberta Quantification Protocol for CO2 Capture and Geological Storage or federal equivalent). Engage verification body early.'),
-      blank(),
-      pageBreak(),
-
-      // ── SUBMISSION PACKAGE ──
-      h1('Submission Package Checklist'),
-      ...incompleteWarning(getIncompleteRequired(12)),
-      h2('Required Submission Components'),
-      body(normal('The following items are included in this application package submitted via AER OneStop (submission account: '), ph('[ONESTOP ACCOUNT ID]'), normal('):')),
-      ...[
-        ['Cover letter', 'signed by authorized representative of [COMPANY LEGAL NAME]'],
-        ['This application document', 'all 12 sections complete with supporting data'],
-        ['Appendix A', 'Well location maps (surface and bottom-hole) — NAD83'],
-        ['Appendix B', 'CO\u2082 stream compositional analysis — laboratory certificate'],
-        ['Appendix C', 'Geological cross-sections and well-log correlation panels'],
-        ['Appendix D', 'Reservoir simulation report (base case + sensitivities)'],
-        ['Appendix E', 'AoR maps (end of injection and end of PISC)'],
-        ['Appendix F', 'Well integrity assessment — complete inventory table'],
-        ['Appendix G', 'Wellbore schematic and casing/cement program'],
-        ['Appendix H', 'FEP analysis and risk register'],
-        ['Appendix I', 'MMV plan — detailed monitoring protocols'],
-        ['Appendix J', 'Consultation record (D056 PIP, Indigenous engagement)'],
-        ['Appendix K', 'Emergency Response Plan with decision trees'],
-        ['Appendix L', 'Closure cost estimate (itemized)'],
-        ['Appendix M', 'CSTA — current executed copy'],
-        ['Appendix N', 'Digital data package (GIS files, simulation decks, well logs)'],
-      ].map(([app, desc]) => body(bold(app + ':  '), normal(desc))),
-      new Paragraph({ spacing: { after: 200 } }),
-      body(bold('OneStop application fees paid:  '), ph('[confirmation number]'), normal('   '), bold('Date:  '), ph('[YYYY-MM-DD]')),
-      body(bold('Petrinex CO\u2082 injection scheme code prepared:  '), ph('[CO2/N_A/INJ/CARBON SEQU]')),
-      new Paragraph({ spacing: { after: 400 } }),
-      new Paragraph({ children: [new TextRun({ text: 'I certify that the information contained in this application is accurate and complete to the best of my knowledge.', italics: true, size: 20, font: 'Arial', color: MUTED })], spacing: { after: 200 } }),
-      body(bold('Authorized Signatory:  '), ph('[NAME, TITLE]'), normal('     '), bold('Date:  '), ph('[YYYY-MM-DD]')),
-      body(bold('Signature:  '), new TextRun({ text: '_____________________________________', font: 'Arial', size: 22 })),
-    ];
-
-    const doc = new Document({
-      creator: 'SubsurfaceAI D065 Assistant',
-      title: 'AER Directive 065 — CO2 Storage Scheme Application Template',
-      description: 'Pre-structured application template generated by SubsurfaceAI D065 Assistant',
-      styles: {
-        default: {
-          document: { run: { font: 'Arial', size: 22 } },
-        },
-        paragraphStyles: [
-          { id: 'Normal', name: 'Normal', run: { font: 'Arial', size: 22 }, paragraph: { spacing: { line: 276 } } },
-          { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', run: { bold: true, size: 28, color: '0A1628' }, paragraph: { spacing: { before: 480, after: 160 }, border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: '0077B6' } } } },
-          { id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', run: { bold: true, size: 24, color: '0077B6' }, paragraph: { spacing: { before: 320, after: 100 } } },
-          { id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', run: { bold: true, size: 22, color: '333333' }, paragraph: { spacing: { before: 240, after: 80 } } },
-        ],
-      },
-      sections: [{
-        properties: {
-          page: {
-            margin: { top: 1440, bottom: 1440, left: 1418, right: 1418 }, // 2.5cm margins
-          },
-        },
-        children,
-      }],
-    });
-
-    const blob = await Packer.toBlob(doc);
+    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'D065_CO2_Storage_Application_Template.docx';
+    a.download = 'D065_CO2_Storage_Application_Template.doc';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  } catch(e) {
-    alert('Error generating Word document: ' + e.message);
-    console.error(e);
-  }
 
   btn.classList.remove('dl-generating');
-  btn.querySelector('strong').textContent = 'Download Word Template (.docx)';
+  btn.querySelector('strong').textContent = 'Download Word Template (.doc)';
 }
+
 
 // ========== PDF SAMPLE GENERATOR ==========
 function generatePDFSample() {
