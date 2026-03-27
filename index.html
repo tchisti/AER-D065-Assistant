@@ -104,13 +104,42 @@ h2{font-size:1.3rem;font-weight:700;margin-bottom:16px}
 .sub-list li{margin:4px 0}
 .highlight{color:var(--accent);font-weight:600}
 
-/* Print */
+/* Checklist action bar */
+.checklist-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;font-size:0.85rem;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:all 0.2s}
+.btn-save{background:rgba(16,185,129,0.15);color:var(--success);border:1px solid rgba(16,185,129,0.3)}
+.btn-save:hover{background:rgba(16,185,129,0.25)}
+.btn-pdf{background:rgba(0,180,216,0.12);color:var(--accent);border:1px solid rgba(0,180,216,0.3)}
+.btn-pdf:hover{background:rgba(0,180,216,0.22)}
+.btn-clear{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.2)}
+.btn-clear:hover{background:rgba(239,68,68,0.2)}
+.save-status{font-size:0.78rem;color:var(--text2);margin-left:auto;padding:4px 0}
+
+/* Print / PDF */
 @media print{
-  body{background:white;color:black}
-  .header,.tabs{display:none}
-  .panel{display:block!important}
-  .card{break-inside:avoid;border-color:#ddd}
-  .card-body{display:block!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#fff!important;color:#111!important}
+  .header,.tabs,.checklist-actions{display:none!important}
+  .content{padding:0!important;max-width:100%!important}
+  .panel{display:none!important}
+  #checklist{display:block!important;padding:10px 0!important}
+  #checklist h2{color:#111;font-size:1.1rem;margin-bottom:8px}
+  #checklist .section-intro{color:#555;font-size:0.82rem;margin-bottom:12px}
+  .progress-bar-container{background:#f4f6f8!important;border:1px solid #ccc!important;border-radius:6px;padding:14px;margin-bottom:16px;page-break-inside:avoid}
+  .progress-header h3{color:#111!important}.pct{color:#0077b6!important}
+  .progress-track{background:#ddd!important}.progress-fill{border-radius:4px}
+  .progress-stats{color:#555!important}
+  .checklist-group{page-break-inside:avoid;margin-bottom:14px}
+  .checklist-group-title{color:#111!important;border-bottom:1px solid #ccc!important;padding:8px 0;font-size:0.85rem}
+  .sec-num{background:#0077b6!important;color:#fff!important}
+  .check-item{padding:5px 8px!important;background:#fff!important;border-radius:4px}
+  .check-item:hover{background:#fff!important}
+  .check-item label{color:#111!important;font-size:0.8rem!important}
+  .check-item.checked label{color:#888!important;text-decoration:line-through}
+  .check-item input[type="checkbox"]{width:13px!important;height:13px!important;accent-color:#0077b6}
+  .tag.required{background:#ffe4e4!important;color:#c00!important;border:1px solid #f9a!important}
+  .tag.recommended{background:#fff3cd!important;color:#856404!important;border:1px solid #ffc!important}
+  .tag.optional{background:#e9ecef!important;color:#555!important;border:1px solid #ccc!important}
 }
 
 /* Approval Intelligence */
@@ -574,6 +603,14 @@ h2{font-size:1.3rem;font-weight:700;margin-bottom:16px}
       <span id="statRemain">0 remaining</span>
       <span id="statRequired">0 required items pending</span>
     </div>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="checklist-actions">
+    <button class="btn btn-save" onclick="saveProgress()">&#10003; Save Progress</button>
+    <button class="btn btn-pdf" onclick="downloadPDF()">&#8615; Download PDF</button>
+    <button class="btn btn-clear" onclick="clearProgress()">&#10005; Clear All</button>
+    <span class="save-status" id="saveStatus"></span>
   </div>
 
   <!-- Checklist Groups -->
@@ -1366,7 +1403,50 @@ function updateProgress() {
   if(pctVal === 100) fill.style.background = 'var(--success)';
   else if(pctVal > 75) fill.style.background = 'linear-gradient(90deg,var(--accent2),var(--success))';
   else fill.style.background = 'linear-gradient(90deg,var(--accent2),var(--accent))';
+  // auto-save state to localStorage silently
+  const _s = {};
+  boxes.forEach(b => { _s[b.id] = b.checked; });
+  localStorage.setItem('aer_d065_checklist', JSON.stringify(_s));
 }
+
+// ========== SAVE / LOAD / PDF ==========
+function saveProgress() {
+  const ts = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  localStorage.setItem('aer_d065_ts', ts);
+  document.getElementById('saveStatus').textContent = '\u2713 Saved ' + ts;
+}
+
+function loadProgress() {
+  const saved = localStorage.getItem('aer_d065_checklist');
+  if (!saved) return;
+  const state = JSON.parse(saved);
+  Object.keys(state).forEach(id => {
+    const cb = document.getElementById(id);
+    if (cb) cb.checked = state[id];
+  });
+  const ts = localStorage.getItem('aer_d065_ts');
+  if (ts) document.getElementById('saveStatus').textContent = 'Last saved ' + ts;
+}
+
+function clearProgress() {
+  if (!confirm('Clear all checked items and saved progress?')) return;
+  document.querySelectorAll('#checklistContent input[type="checkbox"]').forEach(b => b.checked = false);
+  localStorage.removeItem('aer_d065_checklist');
+  localStorage.removeItem('aer_d065_ts');
+  document.getElementById('saveStatus').textContent = 'Progress cleared';
+  updateProgress();
+}
+
+function downloadPDF() {
+  const panel = document.getElementById('checklist');
+  const wasActive = panel.classList.contains('active');
+  if (!wasActive) panel.classList.add('active');
+  window.print();
+  if (!wasActive) panel.classList.remove('active');
+}
+
+// init: load saved state then compute progress
+loadProgress();
 updateProgress();
 </script>
 </body>
